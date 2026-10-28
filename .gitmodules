@@ -1,0 +1,7 @@
+[submodule "corpus-filtering"]
+	path = corpus-filtering
+	url = https://github.com/CLMBRs/corpus-filtering.git
+
+[submodule "lm-training"]
+	path = lm-training
+	url = https://github.com/CLMBRs/lm-training.git

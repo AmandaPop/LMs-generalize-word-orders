@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Local environments and editor files
+.venv/
+.env
+.DS_Store
+.vscode/
+
+# Generated corpus and preprocessing artifacts
+outputs/*
+corpus/*
+
+# Tokenizers, training runs, and experiment logs
+lm-training/models/
+lm-training/wandb/
+wandb/
+logs/
+
+# Generated evaluation tables
+evaluation/data/*
+evaluation/plots/*
