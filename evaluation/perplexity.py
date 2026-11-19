@@ -1,18 +1,23 @@
 """Evaluate checkpoint perplexity on minimal pairs or the generated test corpus.
+
 Run with:
 python evaluation/perplexity.py eval <MODEL_CHECKPOINT_PATH_1> <MODEL_CHECKPOINT_PATH_2> ...
 or
 python evaluation/perplexity.py test <MODEL_CHECKPOINT_PATH_1> <MODEL_CHECKPOINT_PATH_2> ...
+
+depending on which dataset you want ppl on. 
 """
 
 import argparse
 import json
+import os
 from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
 from minicons import scorer
 from scipy.stats import ttest_rel
+from transformers import AutoTokenizer, PreTrainedTokenizerFast
 from tqdm import tqdm
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -29,9 +34,37 @@ def get_model_size(path):
 def get_perplexity(paths, sentences, skip_long_sentences=False):
     results = defaultdict(list)
     for path in paths:
-        print(f"\nLoading model: {path}")
-        model = scorer.IncrementalLMScorer(path, device="cuda")
-        model_size = get_model_size(path)
+        checkpoint = str(path)
+        print(f"\nLoading model: {checkpoint}")
+
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(checkpoint, local_files_only=True)
+        except (OSError, ValueError, EnvironmentError):
+            tokenizer_path = os.environ.get("TOKENIZER_PATH")
+            tokenizer = (
+                PreTrainedTokenizerFast(
+                    tokenizer_file=tokenizer_path,
+                    unk_token="<unk>",
+                    eos_token="<eos>",
+                    pad_token="<pad>",
+                    model_max_length=512,
+                )
+                if tokenizer_path
+                else None
+            )
+
+        if tokenizer is None:
+            raise RuntimeError(
+                f"Could not load a tokenizer for checkpoint {checkpoint}. "
+                "Set TOKENIZER_PATH to your trained word-level tokenizer JSON."
+            )
+
+        model = scorer.IncrementalLMScorer(
+            checkpoint,
+            tokenizer=tokenizer,
+            device="cuda",
+        )
+        model_size = get_model_size(checkpoint)
 
         for index, sentence in enumerate(
             tqdm(sentences, desc=f"Scoring {model_size}")
@@ -105,10 +138,10 @@ def main():
 
     if args.mode == "test":
         results = get_perplexity(args.model_paths, sentences, skip_long_sentences=True)
-        output_path = output_dir / "perplexity_test_results.txt"
+        output_path = output_dir / "skyline_perplexity_test_results.txt"
         sections = [("Pairwise T-tests for Test Set", results)]
     else:
-        output_path = output_dir / "perplexity_eval_results.txt"
+        output_path = output_dir / "skyline_perplexity_eval_results.txt"
         sections = [
             (
                 "Pairwise T-Tests for Eval Set Good Sentences",
