@@ -105,7 +105,7 @@ def perplexity_ttest(results):
 
 def load_sentences(mode):
     if mode == "test":
-        test_path = ROOT_DIR / "outputs/test.txt"
+        test_path = ROOT_DIR / "corpus/test.txt"
         with test_path.open(encoding="utf-8") as file:
             return [line.strip() for line in file if line.strip()]
 
